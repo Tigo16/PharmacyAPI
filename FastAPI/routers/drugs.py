@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .. import crud, schemas
-from ..database import get_db
+from FastAPI import crud, schemas
+from FastAPI.database import get_db
+from FastAPI.models import Drug
 
 router = APIRouter(prefix="/drugs", tags=["Drugs"])
 
@@ -26,3 +27,30 @@ def delete_drug(drug_id: int, db: Session = Depends(get_db)):
     if not db_drug:
         raise HTTPException(status_code=404, detail="Drug not found")
     return {"message": "Drug deleted successfully"}
+
+#Select
+@router.get("/filter")
+def filter_drugs(
+    manufacturer: str,
+    min_dosage: str,
+    indication: str,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Drug).filter(
+         Drug.manufacturer == manufacturer,
+        Drug.dosage.ilike(f"%{min_dosage}%"),
+        Drug.indications.ilike(f"%{indication}%"),
+    )
+    return query.all()
+
+#Sorting
+@router.get("/drugs/sort")
+def get_sorted_drugs(order_by: str = "asc", db: Session = Depends(get_db)):
+    query = db.query(Drug)
+    if order_by == "asc":
+        query = query.order_by(Drug.price.asc())
+    elif order_by == "desc":
+        query = query.order_by(Drug.price.desc())
+    else:
+        return {"error": "Invalid order_by value. Use 'asc' or 'desc'."}
+    return query.all()

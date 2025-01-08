@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, Date
 from sqlalchemy.orm import relationship
-from .database import Base
+from FastAPI.database import Base
 
 class Drug(Base):
     __tablename__ = "drugs"
