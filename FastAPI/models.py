@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, Date, Boolean, Index
 from sqlalchemy.orm import relationship
 from FastAPI.database import Base
 
@@ -11,6 +11,13 @@ class Drug(Base):
     dosage = Column(String, nullable=False)
     indications = Column(String, nullable=True)
     contraindications = Column(String, nullable=True)
+
+    is_prescription_required = Column(Boolean, default=False)  # Новая колонка
+
+    # Добавление индекса на поле manufacturer
+    __table_args__ = (
+        Index("ix_drugs_manufacturer", "manufacturer"),
+    )
 
     inventory = relationship("Inventory", back_populates="drug")
 
