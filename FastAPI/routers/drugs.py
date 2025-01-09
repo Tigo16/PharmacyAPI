@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from FastAPI import crud, schemas
 from FastAPI.database import get_db
 from FastAPI.models import Drug
+from FastAPI.schemas import Pagination
 
 router = APIRouter(prefix="/drugs", tags=["Drugs"])
 
@@ -10,9 +11,11 @@ router = APIRouter(prefix="/drugs", tags=["Drugs"])
 def create_drug(drug: schemas.DrugCreate, db: Session = Depends(get_db)):
     return crud.create_drug(db=db, drug=drug)
 
-@router.get("/", response_model=list[schemas.Drug])
+@router.get("/", response_model=Pagination[schemas.Drug])
 def read_drugs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return crud.get_drugs(db=db, skip=skip, limit=limit)
+    total_count = db.query(Drug).count()  # Get the total number of records
+    drugs = crud.get_drugs(db=db, skip=skip, limit=limit)
+    return {"items": drugs, "total_count": total_count}
 
 @router.put("/{drug_id}", response_model=schemas.Drug)
 def update_drug(drug_id: int, drug: schemas.DrugCreate, db: Session = Depends(get_db)):
@@ -28,7 +31,7 @@ def delete_drug(drug_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Drug not found")
     return {"message": "Drug deleted successfully"}
 
-#Select
+# Filter
 @router.get("/filter")
 def filter_drugs(
     manufacturer: str,
@@ -37,13 +40,13 @@ def filter_drugs(
     db: Session = Depends(get_db),
 ):
     query = db.query(Drug).filter(
-         Drug.manufacturer == manufacturer,
+        Drug.manufacturer == manufacturer,
         Drug.dosage.ilike(f"%{min_dosage}%"),
         Drug.indications.ilike(f"%{indication}%"),
     )
     return query.all()
 
-#Sorting
+# Sorting
 @router.get("/drugs/sort")
 def get_sorted_drugs(order_by: str = "asc", db: Session = Depends(get_db)):
     query = db.query(Drug)

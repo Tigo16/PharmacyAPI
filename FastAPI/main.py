@@ -1,26 +1,40 @@
 from fastapi import FastAPI
 import uvicorn
-from .routers import drugs, pharmacies, inventory
-from .database import engine
-from . import models
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
+from FastAPI.routers import drugs, pharmacies, inventory
+from FastAPI.database import engine, Base
 
-# Создание таблиц, если их еще нет
-models.Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+    print("Database initialized successfully.")
+except SQLAlchemyError as e:
+    print(f"Error initializing database: {e}")
 
-app = FastAPI()
+app = FastAPI(
+    title="Pharmacy API",
+    description="API для управления аптеками и наличием лекарств",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
-# Подключение роутеров
-app.include_router(drugs.router)
-app.include_router(pharmacies.router)
-app.include_router(inventory.router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/")
+app.include_router(drugs.router, prefix="/drugs", tags=["Drugs"])
+app.include_router(pharmacies.router, prefix="/pharmacies", tags=["Pharmacies"])
+app.include_router(inventory.router, prefix="/inventory", tags=["Inventory"])
+
+@app.get("/", tags=["Root"])
 def read_root():
     return {"message": "Welcome to the Pharmacy API"}
 
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Pharmacy API"}
-if __name__ == '__main__':
-    uvicorn.run("main:app", reload=True)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="localhost", port=8000, reload=True)

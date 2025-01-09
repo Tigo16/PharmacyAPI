@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from FastAPI import crud, schemas
 from FastAPI.database import get_db
 from FastAPI.models import Inventory, Pharmacy, Drug
+from FastAPI.schemas import Pagination
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
@@ -11,9 +12,11 @@ router = APIRouter(prefix="/inventory", tags=["Inventory"])
 def create_inventory(inventory: schemas.InventoryCreate, db: Session = Depends(get_db)):
     return crud.create_inventory(db=db, inventory=inventory)
 
-@router.get("/", response_model=list[schemas.Inventory])
+@router.get("/", response_model=Pagination[schemas.Inventory])
 def read_inventory(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return crud.get_inventory(db=db, skip=skip, limit=limit)
+    total_count = db.query(Inventory).count()  # Get the total number of records
+    inventory_items = crud.get_inventory(db=db, skip=skip, limit=limit)
+    return {"items": inventory_items, "total_count": total_count}
 
 @router.put("/{inventory_id}", response_model=schemas.Inventory)
 def update_inventory(inventory_id: int, inventory: schemas.InventoryCreate, db: Session = Depends(get_db)):
@@ -29,7 +32,7 @@ def delete_inventory(inventory_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Inventory not found")
     return {"message": "Inventory deleted successfully"}
 
-#Join
+# Join
 @router.get("/inventory/expiring")
 def get_expiring_inventory(expiration_date: str, db: Session = Depends(get_db)):
     return db.query(
@@ -42,7 +45,7 @@ def get_expiring_inventory(expiration_date: str, db: Session = Depends(get_db)):
         Inventory.expiration_date < expiration_date
     ).all()
 
-#Update
+# Update Prices
 @router.put("/inventory/update-prices/{pharmacy_id}")
 def update_prices(pharmacy_id: int, db: Session = Depends(get_db)):
     subquery = db.query(
@@ -57,7 +60,7 @@ def update_prices(pharmacy_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Prices updated successfully"}
 
-#Group by
+# Group By Statistics
 @router.get("/inventory/statistics")
 def get_inventory_statistics(db: Session = Depends(get_db)):
     return db.query(
