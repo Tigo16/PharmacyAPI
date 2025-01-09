@@ -1,12 +1,12 @@
 from pydantic import BaseModel
-from typing import Optional, TypeVar, Generic, List
+from typing import Optional, TypeVar, List
 from datetime import date
 
-T = TypeVar('T')  # Define a type variable
+T = TypeVar('T')
 
-class Pagination(BaseModel, Generic[T]):
-    total: int
+class Pagination(BaseModel):
     items: List[T]
+    total_count: int
 
 class DrugBase(BaseModel):
     name: str
